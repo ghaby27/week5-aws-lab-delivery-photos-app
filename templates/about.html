@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}About{% endblock %}
+{% block content %}
+  <section>
+    <h2>{{ lab }}</h2>
+    <p>Built by <strong>{{ owner }}</strong>.</p>
+    <p class="note">Photos are stored in a private Amazon S3 bucket and copied to a second Region. Their details are kept
+      in Amazon RDS for PostgreSQL. Photos are shown only through Amazon CloudFront, with links that expire.</p>
+  </section>
+{% endblock %}

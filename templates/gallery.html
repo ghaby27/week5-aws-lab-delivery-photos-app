@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Gallery{% endblock %}
+{% block content %}
+  {% if notice %}<section class="notice">{{ notice }}</section>{% endif %}
+  <section>
+    <h2>Delivery photos ({{ photos|length }})</h2>
+    <p class="note">Photos load through CloudFront with links that expire after {{ minutes }} minutes.
+      Reload the page for fresh links.</p>
+  </section>
+  {% if not photos %}
+    <section>No photos yet. <a href="{{ url_for('upload_form') }}">Upload the first one</a>.</section>
+  {% endif %}
+  <div class="grid">
+  {% for p in photos %}
+    <article class="card">
+      <img src="{{ p.url }}" alt="{{ p.title }}" loading="lazy">
+      <div class="body">
+        <h3>{{ p.title }}</h3>
+        {% if p.description %}<div>{{ p.description }}</div>{% endif %}
+        <div class="meta">
+          {% if p.merchant %}Merchant: {{ p.merchant }}<br>{% endif %}
+          {% if p.order_ref %}Order: {{ p.order_ref }}<br>{% endif %}
+          {% if p.rider %}Rider: {{ p.rider }}<br>{% endif %}
+          {% if p.city %}City: {{ p.city }}<br>{% endif %}
+          Uploaded {{ p.uploaded_at.strftime('%d %b %Y %H:%M UTC') }} · {{ (p.size_bytes / 1024)|round|int }} KB
+        </div>
+      </div>
+      <form method="post" action="{{ url_for('delete', photo_id=p.id) }}">
+        <button class="secondary" type="submit">Delete</button>
+      </form>
+    </article>
+  {% endfor %}
+  </div>
+{% endblock %}

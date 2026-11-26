@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Upload{% endblock %}
+{% block content %}
+  <section>
+    <h2>Upload a delivery photo</h2>
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    <form class="form" method="post" enctype="multipart/form-data">
+      <label>Photo (JPEG, PNG or WebP, up to 10 MB)
+        <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required></label>
+      <label>Title <input name="title" maxlength="120" required placeholder="Parcel left with reception"></label>
+      <label>Description <textarea name="description" maxlength="500" rows="3"
+        placeholder="Where and how the parcel was delivered"></textarea></label>
+      <div class="row">
+        <label>Merchant <input name="merchant" maxlength="80" placeholder="Kente Crafts"></label>
+        <label>Order reference <input name="order_ref" maxlength="40" placeholder="ORD-1042"></label>
+      </div>
+      <div class="row">
+        <label>Rider <input name="rider" maxlength="80" placeholder="Kwame A."></label>
+        <label>City <input name="city" maxlength="80" placeholder="Accra"></label>
+      </div>
+      <div><button type="submit">Upload</button></div>
+    </form>
+  </section>
+{% endblock %}
