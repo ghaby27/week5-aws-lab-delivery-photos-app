@@ -1,0 +1,66 @@
+# Builds the photo app image on every merge to main, pushes it to Amazon ECR and rolls the
+# ECS service onto it. Signs in to AWS with GitHub's OIDC token (no stored access keys): the
+# role only allows pushing to this one repository and updating this one service.
+name: release
+
+on:
+  push:
+    branches: [main]
+    paths: [app.py, templates/**, requirements.txt, Dockerfile]
+    tags: ["build-*"]   # pushed by the infra repo's deploy hook to build the first image after a rebuild
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # request the OIDC token
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: eu-west-1
+  AWS_ROLE_ARN: arn:aws:iam::448049788660:role/onward-dev-photos-github-release
+  ECR_REPOSITORY: onward-dev-photos
+  ECS_CLUSTER: onward-dev-photos
+  ECS_SERVICE: onward-dev-photos
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sign in to AWS with OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Sign in to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push the image
+        env:
+          IMAGE: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
+        run: |
+          version=${GITHUB_SHA::7}
+          docker build --build-arg APP_VERSION="$version" -t "$IMAGE:$version" -t "$IMAGE:latest" .
+          docker push "$IMAGE:$version"
+          docker push "$IMAGE:latest"
+          echo "Pushed $IMAGE:$version (also :latest)" >> "$GITHUB_STEP_SUMMARY"
+
+      # The task definition runs :latest, so a new deployment starts tasks from the new image,
+      # one at a time, and the circuit breaker rolls back if they fail their health checks.
+      # On a first build (build-* tag) the service does not exist yet: nothing to roll.
+      - name: Roll the service onto the new image
+        run: |
+          if aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" \
+               --query 'services[?status==`ACTIVE`] | length(@)' --output text 2>/dev/null | grep -q 1; then
+            aws ecs update-service --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" --force-new-deployment >/dev/null
+            aws ecs wait services-stable --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE"
+            echo "Service rolled onto the new image" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Service not deployed yet; the platform stack will start it" >> "$GITHUB_STEP_SUMMARY"
+          fi
