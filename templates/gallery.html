@@ -13,7 +13,7 @@
   <div class="grid">
   {% for p in photos %}
     <article class="card">
-      <img src="{{ p.url }}" alt="{{ p.title }}" loading="lazy">
+      <img src="{{ p.url }}" alt="{{ p.title }}">
       <div class="body">
         <h3>{{ p.title }}</h3>
         {% if p.description %}<div>{{ p.description }}</div>{% endif %}
