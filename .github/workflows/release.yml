@@ -6,7 +6,6 @@ name: release
 on:
   push:
     branches: [main]
-    paths: [app.py, templates/**, requirements.txt, Dockerfile]
     tags: ["build-*"]   # pushed by the infra repo's deploy hook to build the first image after a rebuild
   workflow_dispatch:
 
