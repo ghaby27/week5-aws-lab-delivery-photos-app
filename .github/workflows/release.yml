@@ -18,12 +18,17 @@ concurrency:
   group: release
   cancel-in-progress: false
 
+# Settings live in the repository, not here: Settings > Secrets and variables > Actions.
+#   secret   AWS_ROLE_ARN    role the workflow assumes through OIDC
+#   variable AWS_REGION      e.g. eu-west-1
+#   variable ECR_REPOSITORY  e.g. onward-dev-photos
+#   variable ECS_CLUSTER     e.g. onward-dev-photos
+#   variable ECS_SERVICE     e.g. onward-dev-photos
 env:
-  AWS_REGION: eu-west-1
-  AWS_ROLE_ARN: arn:aws:iam::448049788660:role/onward-dev-photos-github-release
-  ECR_REPOSITORY: onward-dev-photos
-  ECS_CLUSTER: onward-dev-photos
-  ECS_SERVICE: onward-dev-photos
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+  ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+  ECS_SERVICE: ${{ vars.ECS_SERVICE }}
 
 jobs:
   release:
@@ -34,7 +39,7 @@ jobs:
       - name: Sign in to AWS with OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Sign in to Amazon ECR
